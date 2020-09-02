@@ -38,10 +38,10 @@
 **注意**
 * 对FLV版本1，tag header固定为11个字节，PreviousTagSize（除第1个）的值为 11 + 前一个tag 的 tag body的大小 
 
-#### tag结构
+### FLV Tag
 * flv tag 由 header 和 body 组成
 
-##### tag header
+#### tag header
 header 结构如下：
 ![](resource/FLV/04.png)
 
@@ -58,4 +58,100 @@ header分析
 
 ![](resource/FLV/05.png)
 
-##### tag body 
+**备注**
+* 在播放中，FLV标签的时间顺序仅取决于FLV时间戳。 有效载荷数据格式中内置的任何计时机制都将被忽略。
+
+### Audio Tag
+![](resource/FLV/06.png)
+
+#### audio tag 字段解析
+* SoundFormat 第一个字节的前四个二进制位 **0000** 0000，
+    * 0 = Linear PCM, platform endian  
+    * 1 = ADPCM 
+    * 2 = MP3  
+    * 3 = Linear PCM, little endian  
+    * 4 = Nellymoser 16-kHz mono 
+    * 5 = Nellymoser 8-kHz mono  
+    * 6 = Nellymoser  
+    * 7 = G.711 A-law logarithmic PCM
+    * 8 = G.711 mu-law logarithmic PCM 
+    * 9 = reserved  
+    * 10 = AAC  
+    * 11 = Speex  
+    * 14 = MP3 8-Khz  
+    * 15 = Device-specific sound 
+* SoundRate 第一个字节的第5和第6两个二进制位 0000 **00**00，对于aac来说这个值永远是3
+    * 0 = 5.5-kHz 
+    * 1 = 11-kHz 
+    * 2 = 22-kHz 
+    * 3 = 44-kHz
+* SoundSize 第一个字节的第7个二进制位 0000 00**0**0，只要是压缩过的音频，这个值永远是1
+    * 0 = snd8Bit 8位
+    * 1 = snd16Bit 16位
+* SoundType 第一个字节的最后一个二进制位 0000 000**0**，对Nellymoser来说，永远是单声道；对AAC来说，永远是双声道； 
+    * 0 = sndMono 单声道 
+    * 1 = sndStereo 双声道
+* SoundData 如果是AAC，则为 AACAUDIODATA
+![](resource/FLV/07.png)
+
+**备注**
+* 如果SoundFormat指示AAC，则SoundType应该设置为1（立体声），SoundRate应该设置为3（44 kHz）。 但是，这并不意味着FLV中的AAC音频始终是44 kHz立体声数据。 相反，Flash Player会忽略这些值，并提取通道，并将采样率数据编码在AAC比特流中。
+* 格式3，线性PCM，存储原始PCM样本。 如果数据为8位，则样本为无符号字节。 如果数据为16位，则将样本存储为小端数字符号。 如果数据是立体声的，则左右采样以交错方式存储：左-右-左-右-依此类推。格式0 PCM与格式3 PCM相同，不同之处在于格式0按照创建文件的平台的字节顺序存储16位PCM样本。 因此，不建议使用格式0。
+* Nellymoser 8 kHz和16 kHz是特殊情况-其他格式不支持8和16 kHz采样率，并且SoundRate位不能表示该值。 在SoundFormat中指定Nellymoser 8-kHz或Nellymoser 16-kHz时，将忽略SoundRate和SoundType字段。 对于其他Nellymoser采样率，请指定常规的Nellymoser SoundFormat并照常使用SoundRate和SoundType字段。
+
+#### AACAUDIODATA 解析
+当 SoundFormat 为0xa=1010=10时，表示音频采AAC进行编码，SoundData的定义如下：
+![](resource/FLV/08.png)
+
+* AACPacketType 一个字节，表示AACAUDIODATA的类型。
+    * 0: AAC sequence header AAC序列header
+    * 1: AAC raw aac原始数据
+* Data 
+    * AACPacketType为0，则为AudioSpecificConfig 
+    * 如果AACPacketType为1，则为AAC帧数据
+
+**注意**
+* 如果SoundFormat == 10时，AACPacketType这个字段才会出现
+* AAC sequence header也就是包含了更加详细的音频信息数据，叫AudioSpecificConfig，它占两个字节
+
+##### AudioSpecificConfig 解析
+![](resource/FLV/09.png)
+
+总共占2个字节 0001 0010 0000 1000
+* audioObjectType 
+    * 第一个字节的前5个二进制位,  **0001 0**010 0000 1000
+    * 其实就是表示profile，编码档次
+* samplingFrequencyIndex 
+    * 第一个字节的后3个二进制位和第二个自己的第1个二进制位，共4位。0001 0**010 0**000 1000
+    * 这是aac音频帧的前7个字节ADST组成元素，samplingFrequencyIndex最准确的信息是在AudioSpecificConfig中，所以就对AudioSpecificConfig进行解析并得到了samplingFrequencyIndex。
+    * 44100 对应值永远是4
+* channelConfiguration 
+    * 第二个字节的第2个二进制位到第5个二进制位，共4位。0001 0010 0**000 1**000
+    * 音频声道数，这里是最准的。
+* frameLengthFlag 
+    * 标志位，表示IMDCT窗口长度，0
+* dependsOnCoreCoder
+    * 标志位，表示是否依赖coreCoder 0
+* extensionFlag
+    * aac-lc，这里是0
+
+![](resource/FLV/10.png)
+
+### Video Tag
+![](resource/FLV/11.png)
+
+#### video tag 字段解析
+* FrameType
+* CodecID
+* VideoData
+
+
+
+
+
+
+
+**参考**
+* https://blog.csdn.net/jwybobo2007/article/details/9221657
+* https://blog.csdn.net/sunshine_505/article/details/80924620
+* https://juejin.im/post/6844903910801408013#heading-4
