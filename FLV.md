@@ -114,7 +114,7 @@ header分析
 * 如果SoundFormat == 10时，AACPacketType这个字段才会出现
 * AAC sequence header也就是包含了更加详细的音频信息数据，叫AudioSpecificConfig，它占两个字节
 
-##### AudioSpecificConfig 解析
+#### AudioSpecificConfig 解析
 ![](resource/FLV/09.png)
 
 总共占2个字节 0001 0010 0000 1000
@@ -141,12 +141,67 @@ header分析
 ![](resource/FLV/11.png)
 
 #### video tag 字段解析
-* FrameType
-* CodecID
-* VideoData
+* FrameType 第一个字节的前4个二进制位 帧类型
+    * 1: 关键帧（对于AVC，是可搜索的帧），就是IDR帧
+    * 2: 帧间（对于AVC，不可搜索的帧）非I帧
+    * 3: disposable inter frame (H.263 only)
+    * 4: generated keyframe (reserved for server use only)
+    * 5: video info/command frame
+* CodecID 第一个字节的后4个二进制位 编码标准
+    * 1: JPEG (currently unused)  
+    * 2: Sorenson H.263 
+    * 3: Screen video  
+    * 4: On2 VP6
+    * 5: On2 VP6 with alpha channel 
+    * 6: Screen video version 2  
+    * 7: AVC（H264）
+* VideoData  VideoFramePayload 视频帧数据，得根据CodecID的不同而不同
+    * 2: H263VIDEOPACKET          CodecID=2
+    * 3: SCREENVIDEOPACKET        CodecID=3
+    * 4: VP6FLVVIDEOPACKET        CodecID=4
+    * 5: VP6FLVALPHAVIDEOPACKET   CodecID=5
+    * 6: SCREENV2VIDEOPACKET      CodecID=6
+    * 7: AVCVIDEOPACKE            CodecID=7
 
+**注意：**
+* 如果FrameType = 5，VideoData就不是视频有效载荷（VideoFramePayload）了，那VideoData就变成了一个字节的则消息流，这个字节的值表达的意义如下：
+    * 0 = 客户端搜索视频帧序列的开始
+    * 1 = 客户端搜寻视频帧序列的结尾
 
+#### AVCVIDEOPACKE 解析
+![](resource/FLV/12.png)
 
+* AVCPacketType 一个字节
+    * 0 AVC sequence header 
+    * 1 AVC NALU 
+    * 2 AVC end of sequence
+* CompositionTime 三个字节
+    * 如果AVCPacketType==1时，则此值表示cts(合成时间偏移量)的值，单位是毫秒
+    * 否则该值等于0
+* Data 数据，
+    * 如果AVCPacketType==0，则该值等于AVCDecoderConfigurationRecord
+    * 如果AVCPacketType==1，一个或多个NALU（每个FLV数据包可以是单个切片；也就是说，不严格要求完整帧）
+    * 如果AVCPacketType==2，空值
+
+**备注：**
+* NALU：这是H264编码器把编码后的数据封装成一个一个小单元，包括pps/sps/sei/videorawdata
+* AVCDecoderConfigurationRecord：包含着是H.264解码相关比较重要的sps和pps信息，再给AVC解码器送数据流之前一定要把sps和pps信息送出，否则的话解码器不能正常解码。而且在解码器stop之后再次start之前，如seek、快进快退状态切换等，都需要重新送一遍sps和pps的信息.AVCDecoderConfigurationRecord在FLV文件中一般情况也是出现1次，也就是第一个video tag.
+* CTS（Composition time offset）：当B帧的存在时，视频解码呈现过程中，dts、pts可能不同，cts的计算公式为 pts - dts/90，单位为毫秒；如果B帧不存在，则cts固定为0；
+
+#### AVCDecoderConfigurationRecord 解析
+![](resource/FLV/13.png)
+
+* configurationVersion
+* AVCProfileIndication
+* profile_compatibility
+* AVCLevelIndication
+* lengthSizeMinusOne
+* numOfSequenceParameterSets
+* sequenceParameterSetLength
+* sequenceParameterSetNALUnits
+* numOfPictureParameterSets
+* pictureParameterSetLength
+* pictureParameterSetNALUnits
 
 
 
