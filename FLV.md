@@ -1,8 +1,12 @@
+2020年9月1日 北京 入秋了都，天气很棒
 ## FLV 格式学习笔记
 ###  概述
 * FLV文件中的每种标签类型都构成一个流。 FLV文件中最多只能同步同步一个音频和一个视频流。 FLV文件不能定义单个类型的多个独立流。
 * 与SWF文件不同，FLV文件以big-endian字节顺序存储多字节整数。 例如，作为SWF文件格式的UI16，代表数字300（0x12C）的字节序列为0x2C 0x01； 作为FLV文件格式的UI16，代表数字300的字节序列为0x01 0x2C。 同样，FLV文件使用SWF文件中未使用的3字节整数类型：UI24表示无符号的24位整数。
 * FLV文件由文件头 header 和 文件体组Body成，文件体又有PreviousTagSize 和 tag 组成，tag又由tag header 和 tag body 组成。
+
+![](resource/FLV/14.png)
+![](resource/FLV/15.png)
 
 ### FLV Header
 所有的FLV文件都是以下面的Header开头的
@@ -99,7 +103,7 @@ header分析
 * 格式3，线性PCM，存储原始PCM样本。 如果数据为8位，则样本为无符号字节。 如果数据为16位，则将样本存储为小端数字符号。 如果数据是立体声的，则左右采样以交错方式存储：左-右-左-右-依此类推。格式0 PCM与格式3 PCM相同，不同之处在于格式0按照创建文件的平台的字节顺序存储16位PCM样本。 因此，不建议使用格式0。
 * Nellymoser 8 kHz和16 kHz是特殊情况-其他格式不支持8和16 kHz采样率，并且SoundRate位不能表示该值。 在SoundFormat中指定Nellymoser 8-kHz或Nellymoser 16-kHz时，将忽略SoundRate和SoundType字段。 对于其他Nellymoser采样率，请指定常规的Nellymoser SoundFormat并照常使用SoundRate和SoundType字段。
 
-#### AACAUDIODATA 解析
+#### AACAudioData 解析
 当 SoundFormat 为0xa=1010=10时，表示音频采AAC进行编码，SoundData的定义如下：
 ![](resource/FLV/08.png)
 
@@ -168,7 +172,7 @@ header分析
     * 0 = 客户端搜索视频帧序列的开始
     * 1 = 客户端搜寻视频帧序列的结尾
 
-#### AVCVIDEOPACKE 解析
+#### AVCVideoPacke 解析
 ![](resource/FLV/12.png)
 
 * AVCPacketType 一个字节
@@ -191,12 +195,22 @@ header分析
 #### AVCDecoderConfigurationRecord 解析
 ![](resource/FLV/13.png)
 
-* configurationVersion
-* AVCProfileIndication
-* profile_compatibility
-* AVCLevelIndication
-* lengthSizeMinusOne
-* numOfSequenceParameterSets
+* configurationVersion 一个字节
+    * 版本号，1
+* AVCProfileIndication 一个字节
+    * sps[1]
+* profile_compatibility 一个字节
+    * sps[2]
+* AVCLevelIndication 一个字节
+    * sps[3]
+* reserved 6个二进制位，保留值 
+    * 111111
+* lengthSizeMinusOne 两个二进制位
+    * NALUnitLength的长度-1，一般为3=11
+* reserved 三个二进制位， 保留值
+    * 111
+* numOfSequenceParameterSets 五个二进制位
+    * sps的个数，一般是00001
 * sequenceParameterSetLength
 * sequenceParameterSetNALUnits
 * numOfPictureParameterSets
@@ -204,9 +218,108 @@ header分析
 * pictureParameterSetNALUnits
 
 
+### Script Tag Data结构（控制帧）
+* 该类型Tag又通常被称为Metadata Tag，会放一些关于FLV视频和音频的元数据信息如：duration、width、height等。通常该类型Tag会跟在File Header后面作为第一个Tag出现，而且只有一个。
+* 它的定义相对复杂些，采用AMF（Action Message Format）封装了一系列数据类型，比如字符串、数值、数组等。
+![](resource/FLV/16.png)
+![](resource/FLV/17.png)
 
+* Objects：字段类型是SCRIPTDATAOBJECT[]，任意数量的SCRIPTDATAOBJECT结构
+* End: 三个字节，永远是9，标识着Script Data的结束，也叫SCRIPTDATAOBJECTEND
+
+#### ScriptDataObject 和 ScriptDataObjectEnd
+![](resource/FLV/21.png)
+    * ObjectName 对象的名字
+    * ObjectData 对象的值
+    * ObjectEndMarker2 三个字节，永远是9，标识着Script Data的结束
+
+#### ScriptDataValue
+SCRIPTDATAVALUE 表示ActionScript值或对象的抽象定义。 它可以包含值，对象，变量或数组的列表。
+![](resource/FLV/20.png)
+
+* Type：一个字节
+    * 0 = Number type  
+    * 1 = Boolean type  
+    * 2 = String type  
+    * 3 = Object type  
+    * 4 = MovieClip type  
+    * 5 = Null type  
+    * 6 = Undefined type  
+    * 7 = Reference type 
+    * 8 = ECMA array type 
+    * 10 = Strict array type 
+    * 11 = Date type  
+    * 12 = Long string type
+* ECMAArrayLength  如果Type为8（数组），则为UI32也就是4个字节，表示数组长度
+* ScriptDataValue  变量的值
+    * If Type == 0 DOUBLE
+    * If Type == 1 UI8
+    * If Type == 2 SCRIPTDATASTRING
+    * If Type == 3 SCRIPTDATAOBJECT[n]
+    * If Type == 4 SCRIPTDATASTRING defining the MovieClip path
+    * If Type == 7 UI16
+    * If Type == 8 SCRIPTDATAVARIABLE[ECMAArrayLength] 
+    * If Type == 10 SCRIPTDATAVARIABLE[n] 
+    * If Type == 11 SCRIPTDATADATE 
+    * If Type == 12 SCRIPTDATALONGSTRING
+* ScriptDataValueTerminator   Object、Array的结束符
+    * 如果 Type==3，则为SCRIPTDATAOBJECTEND
+    * 如果 Type==8，则为SCRIPTDATAVARIABLEEND
+
+
+
+
+下面这个就是FLV文件中的第一个tag，
+* 可以看到跳过previousTagSize0后第一个字节0x12=18，18表示Script Data。
+* 其他字段下图解析的很清楚了
+![](resource/FLV/05.png)
+
+**备注：**
+* 如果Type = 8（ECMA数组类型），则ECMAArrayLength会向软件提供有关数组中可能有多少项的提示。 数组继续，直到出现SCRIPTDATAVARIABLEEND。
+* 如果Type = 10（严格数组类型），则数组以UI32类型开头，并包含该确切数量的项目。 该数组不以SCRIPTDATAVARIABLEEND标记终止。
+
+#### ScriptDataVariable and ScriptDataVariableEnd
+SCRIPTDATAVARIABLE在ActionScript中定义变量数据。通过使用SCRIPTDATAVARIABLEEND标记可以终止SCRIPTDATAVARIABLE记录的列表。
+
+![](resource/FLV/22.png)
+* ScriptDataVariable
+    * VariableName ScriptDataString类型，变量的名字
+    * VariableData ScriptDataValue类型，变量的值
+*  ScriptDataVariableEnd
+    *  VariableEndMarker1 三个字节，总是9 = 0x00 00 09
+
+#### ScriptDataDate 
+ScriptDataDate 定义特定的日期和时间
+* DateTime double类型，自UTC(世界标准时间) 1970年1月1日以来的毫秒数。
+* LocalDateTimeOffset 两个字节，本地时间对于UTC的偏移，以分钟为单位。对于位于英国格林威治以西的时区，该值为负数。在英国格林威治以东的时区积是正数。
+
+### onMetaData
+onMetaData中包含了音视频相关的元数据，封装在Script Data Tag中，它包含了两个AMF，通过onMetaData来进一步了解ScriptData
+![](resource/FLV/23.png)
+* 第一个AMF包：
+    * 第1个字节：0x02，表示字符串类型
+    * 第2-3个字节：UI16类型，值为0x000A，表示字符串的长度为10，即onMetaData的长度
+    * 第4-13个字节：字符串onMetaData对应的16进制数字（0x6F 0x6E 0x4D 0x65 0x74 0x61 0x44 0x61 0x74 0x61）
+* 第二个AMF包：
+    * 第1个字节：0x08，表示数组类型；
+    * 第2-5个字节：UI32类型，表示数组的长度，onMetaData中具体包含哪些属性是不固定的。
+    * 第6个字节+：比如duration，后面即为各数组元素的封装，数组元素为元素名称和值组成的对。
+        * 比如duration，则第6-9个字节：0x0008，表示长度为8个字节
+        * 第10-17个字节：0x6475 7261 7469，表示 duration 这个字符串；
+        * 第18个字节：0x00，表示为数值类型；
+        * 第19-26个字节：0x...，表示具体的时长
+        * ......
+
+![](resource/FLV/24.png) 
+![](resource/FLV/25.png) 
+
+更多onMetaData字段的定义：
+![](resource/FLV/26.png) 
 
 **参考**
+* https://www.adobe.com/content/dam/acom/en/devnet/flv/video_file_format_spec_v10.pdf
+* https://juejin.im/post/6844903910801408013#heading-4
+* https://blog.csdn.net/leixiaohua1020/article/details/17934487
 * https://blog.csdn.net/jwybobo2007/article/details/9221657
 * https://blog.csdn.net/sunshine_505/article/details/80924620
-* https://juejin.im/post/6844903910801408013#heading-4
+
