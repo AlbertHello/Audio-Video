@@ -155,3 +155,50 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 * 余下的这三个字节表示timestamp delta，意义同type＝1
 
 ##### fmt=3
+类型3占用0字节，也就是没有message header，这种类型的块使用与先前块相同的数据。当一个消息被分成多个块，除了第一块以外，所有的块都应使用这种类型。
+* 它表示这个chunk的Message Header和上一个是完全相同的。
+* 当它跟在**fmt＝0**的chunk后面时，表示和前一个chunk的时间戳都是相同的。
+    * 什么时候连时间戳都相同呢？就是一个Message拆分成了多个chunk，这个chunk和上一个chunk同属于一个Message。
+* 当它跟在**fmt＝1**或者**fmt＝2**的chunk后面时，表示和前一个chunk的时间戳的差是相同的。
+    * 比如第一个chunk的Type＝0，timestamp＝100，第二个chunk的Type＝2，timestamp delta＝20，表示时间戳为100+20=120，第三个chunk的Type＝3，表示timestamp delta＝20，时间戳为120+20=140
+
+#### Extended Timestamp 扩展时间戳
+![](resource/rtmp/12.png)
+* 只有当块message header中的普通时间戳设置为 0x00ffffff 时，本字段才被传送。 
+* 如果普通时间戳的值小于 0x00ffffff，那么本字段一定不能出现。
+* 如果时间戳字段不出现本字段也一定不能出现。
+* fmt=3的块一定不能含有本字段。
+* 如果发送本字段，则该字段位于块message header之后，块data之前。
+* 表示应该去扩展时间戳字段来提取真正的时间戳或者时间戳差
+* 扩展时间戳存储的是完整值，而不是减去时间戳或者时间戳差的值
+* 扩展时间戳占4个字节，能表示的最大数值就是0xFFFFFFFF＝4294967295
+
+####  Chunk Data 块数据
+用户层面上真正想要发送的与协议无关的数据，长度在(0,chunkSize]之间。
+
+### 消息分块实例
+#### 实例1
+下面展示一个简单的音频消息流。这个例子显示了信息的冗余。
+![](resource/rtmp/13.png)
+
+而下表显示了这个流产生的块。从消息 3 开始，数据传输开始优化。在消息 3
+之后，每个消息只有一个字节的开销
+![](resource/rtmp/14.png)
+
+* 首先包含第一个Message的chunk的Chunk Type为0，因为它没有前面可参考的chunk，timestamp为1000，表示时间戳。type为0的header占用11个字节，假定chunkstreamId为3<127，因此Basic Header占用1个字节，再加上Data的32个字节，因此第一个chunk共44＝11+1+32个字节。
+* 第二个chunk和第一个chunk的CSID，TypeId，Data的长度都相同，因此采用Chunk Type＝2，timestamp delta＝1020-1000＝20，因此第二个chunk占用36=3+1+32个字节。
+* 第三个chunk和第二个chunk的CSID，TypeId，Data的长度和时间戳差都相同，因此采用Chunk Type＝3省去全部Message Header的信息，占用33=1+32个字节。
+* 第四个chunk和第三个chunk情况相同，也占用33=1+32个字节。
+
+#### 实例2
+下面演示一个消息由于太长，而被分割成 128 字节的块
+
+未分块时：
+![](resource/rtmp/15.png)
+拆成块：
+![](resource/rtmp/16.png)
+
+* 注意到Data的Length＝307>128,因此这个Message要切分成几个chunk发送，第一个chunk的Type＝0，Timestamp＝1000，承担128个字节的Data，因此共占用140=11+1+128个字节。
+* 第二个chunk也要发送128个字节，其他字段也同第一个chunk，因此采用Chunk Type＝3，此时时间戳也为1000，共占用129=1+128个字节。
+* 第三个chunk要发送的Data的长度为307-128-128=51个字节，还是采用Type＝3，共占用1+51＝52个字节。
+
