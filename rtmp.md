@@ -174,7 +174,7 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 * 扩展时间戳占4个字节，能表示的最大数值就是0xFFFFFFFF＝4294967295
 
 ####  Chunk Data 块数据
-用户层面上真正想要发送的与协议无关的数据，长度在(0,chunkSize]之间。
+用户层面上真正想要发送的与协议无关的数据，长度在(0,chunkSize]之间
 
 ### 消息分块实例
 #### 实例1
@@ -202,8 +202,25 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 * 第二个chunk也要发送128个字节，其他字段也同第一个chunk，因此采用Chunk Type＝3，此时时间戳也为1000，共占用129=1+128个字节。
 * 第三个chunk要发送的Data的长度为307-128-128=51个字节，还是采用Type＝3，共占用1+51＝52个字节。
 
+### Message
+* chunk data 就是我们说的RTMP Message
+* 服务端和客户端通过在网络上发送 RTMP 消息进行通讯。消息可能包含音频，视频，数据，或其他的消息
+* RTMP 消息分头（header）和负载（payload）两部分
 
-### RTMP Message 
+![](resource/rtmp/17.png)
+ 
+ * Message Type： 1 byte 
+	 * 一个字节字段用于表示消息类型。范围在 1-7 内的消息 ID 用于协议控制消息
+* Payload length（3 bytes) 
+	* 三个字节字段用于表示负载的字节数。设置为 big-endian 格式
+* Timestamp (4 bytes)  
+	* 四字节字段包含消息的时间戳。 4 个字节用 big-endian 方式打包。
+* Stream ID (3 bytes) 
+	* 三字节字段标识消息流。这些字节设置为 big-endian 格式 
+* Message Payload 真实数据
+	* 负载时消息中包含的真实数据。 例如，它可以是音频样本或压缩的视频数据。
+
+#### Message type 
 #### 协议控制消息
 * RTMP 保留消息类型 ID 在 1-7 之内的消息为协议控制消息。这些消息包含 RTMP块流协议和 RTMP 协议本身要使用的信息。 ID 为 1 和 2 用于 RTMP 块流协议。 ID 在 3-6之内用于 RTMP 本身。 ID 7 的消息用于边缘服务与源服务器
 * 协议控制消息必须消息流ID=0和块流ID=2，即Chunk Stream  ID = 0x02 && Message Stream ID = 0
