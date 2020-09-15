@@ -1,5 +1,9 @@
  2020年9月7日 北京 阴有雨，但中午可热了
+ 
  RTMP 笔记
+ 
+rtmp 内容太多了。。。好记性不如烂笔头，留个念想吧
+ 
 ### ShakeHands
 ![](resource/rtmp/01.png)
 
@@ -173,7 +177,7 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 * 扩展时间戳存储的是完整值，而不是减去时间戳或者时间戳差的值
 * 扩展时间戳占4个字节，能表示的最大数值就是0xFFFFFFFF＝4294967295
 
-####  Chunk Data 块数据
+#### Chunk Data 块数据
 用户层面上真正想要发送的与协议无关的数据，长度在(0,chunkSize]之间
 
 ### 消息分块实例
@@ -220,8 +224,7 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 * Message Payload 真实数据
 	* 负载时消息中包含的真实数据。 例如，它可以是音频样本或压缩的视频数据。
 
-#### Message type 
-#### 协议控制消息
+#### Message type - 协议控制消息
 * RTMP 保留消息类型 ID 在 1-7 之内的消息为协议控制消息。这些消息包含 RTMP块流协议和 RTMP 协议本身要使用的信息。 ID 为 1 和 2 用于 RTMP 块流协议。 ID 在 3-6之内用于 RTMP 本身。 ID 7 的消息用于边缘服务与源服务器
 * 协议控制消息必须消息流ID=0和块流ID=2，即Chunk Stream  ID = 0x02 && Message Stream ID = 0
 * 并且有最高的发送优先级。 
@@ -266,36 +269,34 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 ![](resource/rtmp/32.png)
 * 发送者可以在限制类型字段把消息标记为硬（0），软（1），或者动态（2）。如果是硬限制对等端必须按提供的带宽发送数据。如果是软限制，对等端可以灵活决定带宽，发送端可以限制带宽。如果是动态限制，带宽既可以是硬限制也可以是软限制。
 
-#### 其他类型消息
+#### Message type - 其他类型消息
 * 服务端和客户端之间交换的消息包括发送音频数据的音频消息，发送视频数据的视频消息，发送用户数据的数据消息，共享对象消息和命令消息。 共享对象消息，在多个客户端和服务端之间管理分布数据。
 * 命令消息在客户端和服务端之间承载 AMF 编码命令。客户端和服务端可以通过使用命令消息向对方请求远程过程调用
 * [AMF0编码格式](https://wwwimages2.adobe.com/content/dam/acom/en/devnet/pdf/amf0-file-format-specification.pdf)
 * [AMF3编码格式地址失效]()
-
-##### 消息类型
 * 服务端和客户端通过在互连网发送消息来通讯。 消息包括音频消息，视频消息，命令消息，共享对象消息，数据消息，用户控制消息。
 
-###### Command Message(命令消息，Message Type ID＝17或20)
+##### Command Message(命令消息，Message Type ID＝17或20)
 * 用AMF编码的客户端与服务端之间的命令。消息类型为20的用AMF0编码，消息类型为 17 的用 AMF3 编码
 * 这些消息用于在远端实现连接，创建流，发布，播放和暂停等操作。 状态，结果等命令消息用于通知发送者请求命令的状态。命令消息由命令名，传输 ID，和包含相关参数的命令对象组成。客户端或服务端可以使用命令消息向远端请求远程过程调用。
 
-###### Data Message（数据消息，Message Type ID＝15或18)
+##### Data Message（数据消息，Message Type ID＝15或18)
 * 客户端或服务端通过本消息向对方发送元数据和用户数据。元数据包括数据的创建时间、时长、 主题等细节。 消息类型为 18 的用 AMF0 编码，消息类型为 15 的用 AMF3编码。
 
-###### Shared Object Message(共享消息，Message Type ID＝16或19)
+##### Shared Object Message(共享消息，Message Type ID＝16或19)
 * 共享对象是跨多个客户端，实例同步的 FLASH 对象（名值对的集合）。消息类型kMsgContainer=19 用 AMF0 编码， kMsgContainerEx=16 用 AMF3 编码，这两个消息用于共享对象事件。每个消息可包含多个事件。
 ![](resource/rtmp/33.png)
 ![](resource/rtmp/34.png)
 
-###### Audio Message（音频信息，Message Type ID＝8)
+##### Audio Message（音频信息，Message Type ID＝8)
 * 客户端或服务端发送本消息用于发送音频数据。消息类型 8 ，保留为音频消息
 
-###### Video Message（视频信息，Message Type ID＝9）
+##### Video Message（视频信息，Message Type ID＝9）
 * 客户端或服务端使用本消息向对方发送视频数据。消息类型值 9，保留为视频消息。
 视频消息比较大，会造成其他消息的延迟。为了避免这种情况，这种消息被关联为最低
 优先级。
 
-###### Aggregate Message (聚集/聚合信息，Message Type ID＝22)
+##### Aggregate Message (聚集/聚合信息，Message Type ID＝22)
 * 聚合消息是含有一个消息列表的一种消息。消息类型值 22，保留用于聚合消息
 ![](resource/rtmp/35.png)
 ![](resource/rtmp/36.png)
@@ -306,7 +307,7 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 数
 * 子消息可以在内存上连续存储，这样可以在调用系统通过网络发送数据时更有效
 
-###### User Control Message Events(用户控制消息)
+##### User Control Message Events(用户控制消息)
 * 客户端或服务端发送本消息通知对方用户控制事件。可以参考前面讲过的用户控制消息
 * 是协议控制消息的一类，消息类型 ID为4：
     * Message Stream ID=0,Chunk Stream Id= 0x02,Message Type Id=0x04
@@ -314,4 +315,173 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 ![](resource/rtmp/37.png)
 ![](resource/rtmp/38.png)
 
-#### 命令类型
+### 命令类型
+* 客户端和服务端 交换 AMF 编码的命令。发送端发送命令消息。命令消息由命令名，传输 ID，和命令对象组成。命令对象由一系列的相关参数组成。例如，连接命令包含”app”参数，这个参数告知服务端，客户端要连接的应用名。接收端处理命令并且返回含有相同传输 ID 的响应。响应字符串含有_result 或_error 或一个方法名， 例如，一个 verifyclient，或一个 contactExternalServer。
+* 一个含有_result 或_error 的命令字符串表示一个响应。传输 ID，指示出响应所参考的显著的命令？ 。这个相当于 IMAP 或其他协议中的标签。命令字符串中的方法名表示发送端想要在接收端运行一个方法
+* Command Msg 主要分为 net connect 和 net stream 两大块。它的交流方式是双向的，即，你发送一次 net connect 或者 stream 之后，另外一端都必须返回一个 _result 或者 _error 以表示收到信息
+* NetConnection-代表服务端和客户端之间连接的更高层的对象
+* NetStream-代表发送音频流，视频流和其他相关数据的通道的对象。我们也发送像
+播放，暂停等控制数据流动的命令。
+![](resource/rtmp/39.png)
+
+#### NetConnection 命令
+* NetConnection 管理服务端和客户端之间的双路连接。另外，它还支持异步远程方
+法调用。下列的方法可以通过 NetConnection 发送：
+    * connect 连接
+    * call 调用
+    * close 关闭
+    * createStream 创建流
+    
+##### Connect 
+* 客户端向服务端发送一个连接命令请求连接到一个服务应用实例。客户端到服务端的命令结构如下：
+![](resource/rtmp/40.png)
+![](resource/rtmp/41.png)
+
+* Following is the description of the name-value pairs used in Command
+Object of the connect command.下面是在连接命令的命令对象中使用的名值对的描述:
+![](resource/rtmp/42.png)
+![](resource/rtmp/43.png)
+![](resource/rtmp/44.png)
+
+* 音频编解码器属性值
+![](resource/rtmp/45.png)
+* 视频编解码器属性值
+![](resource/rtmp/46.png)
+
+![](resource/rtmp/47.png)
+
+* connect命令消息交互流程：
+![](resource/rtmp/48.png)
+* 执行步骤：
+    * 客户端发送连接命令到服务端，请求与一个服务应用实例建立连接。
+    * 接收到连接命令后，服务端发送”窗口确认消息”到客户端。服务端同时连接到连接命令中提到的应用。
+    * 服务端发送”设置带宽”协议消息到客户端。
+    * 在处理完”设置带宽”消息后， 客户端发送”窗口确认大小”消息到服务端。
+    * 服务端发送用户控制消息中的流开始消息到客户端。
+    * 服务端发送结果命令消息通知客户端连接状态。该命令指定传输 ID（对于连接命令总是 1）。同时还指定一些属性，例如， Flash media server 版本（字符串），能力（数字）， 以及其他的连接信息，例如，层（字符串），代码（字符串），描述（字符串），对象编码（数字）等
+
+##### Call 调用
+* NetConnection 对象的调用方法在接收端运行远程过程调用。远程方法的名作为调
+用命令的参数。
+* 从发送端到接收端的命令结构如下：
+![](resource/rtmp/49.png)
+* 命令相应结构如下：
+![](resource/rtmp/50.png)
+
+##### CreateStream 创建流
+* 客户端发送本命令到服务端创建一个消息通讯的逻辑通道。 音频，视频和元数据的
+发布是由创建流命令建立的流通道承载的
+* NetConnection 本身是默认的流通道，具有流 ID 0 。 协议和一少部分命令消息，包
+括创建流，就使用默认的通讯通道。
+
+* 从客户端到服务端的命令结构如下：
+![](resource/rtmp/51.png)
+
+* 从服务端到客户端的命令结构如下：
+![](resource/rtmp/52.png)
+
+#### NetStream 命令
+* NetStream 定义，基于连接客户端和服务端的 NetConnection 对象的，可以使音频流，视频流和数据消息传输的通道。 对于多数据流，一个 NetConnection 对象可以支持多个 NetStreams。
+* 下列的命令可以在 netstream 上发送。
+    * play
+    * play2
+    * deleteStream
+    * closeStream
+    * receiveAudio
+    * receiveVideo
+    * receiveVideo
+    * seek
+    * pause
+
+##### play
+* 客户端发送本命令到服务端播放一个流。 使用本命令多次也可以创建一个播放列表。如果想创建一个可以在不同的直播流或录制流间切换的动态播放列表，可以多次使用播放命令，并且将重设设为假。 相反，如果想立即播放一个流。清楚队列中正在等待的其它流，将重设设为真。
+* 从客户端到服务端的命令结构入下：
+![](resource/rtmp/53.png)
+![](resource/rtmp/54.png)
+汉化版：
+![](resource/rtmp/56.png)
+![](resource/rtmp/57.png)
+
+* 从服务端到客户端的命令结构如下：
+![](resource/rtmp/55.png)
+汉化版：
+![](resource/rtmp/58.png)
+
+* 交互流程：
+![](resource/rtmp/59.png)
+* 步骤：
+    * 客户端从服务端接收到流创建成功消息，发送播放命令到服务端。
+    * 接收到播放命令后，服务端发送协议消息设置块大小。
+    * 服务端发送另一个协议消息（用户控制消息），并且在消息中指定事件”streamisrecorded”和流 ID。消息承载的头 2 个字， 为事件类型，后 4 个字节为流 ID。
+    * 服务端发送事件”streambegin”的协议消息（用户控制），告知客户端流 ID。
+    * 服务端发送响应状态命令消息 NetStream.Play.Start&NetStream.Play.reset，如果客户端发送的播放命令成功的话。 只有当客户端发送的播放命令设置了 reset 命令的条件下，服务端才发送 NetStream.Play.reset 消息。如果要发送的流没有找的话，服务端发送 NetStream.Play.StreamNotFound 消息。
+* 在此之后服务端发送客户端要播放的音频和视频数据。
+
+##### play2 
+* 和play命令不同，play2 命令可以切换到不同的码率，而不用改变已经播放的内
+容的时间线。服务端对play2命令可以请求的多个码率维护多个文件。
+* 从客户端到服务端的命令结构入下：
+![](resource/rtmp/60.png)
+汉化版：
+![](resource/rtmp/61.png)
+* 交互流程：
+![](resource/rtmp/62.png)
+
+##### deleteStream 
+* 当 NetStream 对象销毁的时候发送删除流命令
+* 从客户端到服务端的命令结构入下：
+![](resource/rtmp/63.png)
+汉化版：
+![](resource/rtmp/64.png)
+* 服务端不返回任何响应
+
+##### receiveAudio 
+* NetStream 对象发送接收音频消息通知服务端发送还是不发送音频到客户端。
+* 从客户端到服务端的命令结构入下：
+![](resource/rtmp/65.png)
+汉化版：
+![](resource/rtmp/66.png)
+* 服务端不返回任何响应
+
+##### receiveVideo
+* NetStream 对象发送 receiveVideo 消息通知服务端是否发送视频到客户端。
+* 从客户端到服务端的命令结构入下：
+![](resource/rtmp/68.png)
+汉化版：
+![](resource/rtmp/67.png)
+* 服务端不返回任何响应
+
+##### Publish
+* 客户端发送一个发布命令，发布一个命名流到服务端。 使用这个名字，任何客户端可
+以播放该流并且接收音频，视频，和数据消息
+* 从客户端到服务端的命令结构入下：
+![](resource/rtmp/69.png)
+汉化版：
+![](resource/rtmp/70.png)
+* 服务端用响应状态命令响应表示一个发布的开始
+
+##### seek
+* 客户端发送seek命令在一个媒体文件中或播放列表中seek偏移
+* 从客户端到服务端的命令结构入下：
+![](resource/rtmp/71.png)
+汉化版：
+![](resource/rtmp/73.png)
+* 如果seek成功服务端发送一个 NetStream.Seek.Notify 状态消息。如果失败，则返回含有_error 的消息。
+
+##### pause
+* 客户端发送暂停命令告诉服务端暂停或开始一个命令。
+* 从客户端到服务端的命令结构入下：
+![](resource/rtmp/72.png)
+汉化版：
+![](resource/rtmp/74.png)
+* 当流暂停的时候，服务端发送一个 NetStream.Pause.Notify 状态消息。当恢复播放的时候发送 NetStream.Unpause.Notify 消息。如果失败，则返回_error 消息
+
+### 参考
+* https://zhuanlan.zhihu.com/p/51509123
+* https://www.zybuluo.com/sheepbao/note/498380
+* https://blog.csdn.net/lightfish_zhang/article/details/88681828
+* 智媒黑板报公众号
+
+
+
+
