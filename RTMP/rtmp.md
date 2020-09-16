@@ -5,7 +5,7 @@
 rtmp 内容太多了。。。好记性不如烂笔头，留个念想吧
  
 ### ShakeHands
-![](resource/rtmp/01.png)
+![](../resource/rtmp/01.png)
 
 * client: 客户端需要发 3 个包。C0,C1,C2
 * server: 服务端也需要发同样 3 个包。 S0,S1,S2
@@ -33,7 +33,7 @@ rtmp 内容太多了。。。好记性不如烂笔头，留个念想吧
 * 需要提及的是，RTMP 默认都是使用 Big-Endian 进行写入和读取，除非强调对某个字段使用 Little-Endian 字节序。
 
 #### C0 和 S0 消息格式
-![](resource/rtmp/02.png)
+![](../resource/rtmp/02.png)
 * C0 和 S0 的长度为 1B，也就是一个字节，它的主要工作是确定 RTMP 的版本号。
 * C0：客户端发送其所支持的 RTMP 版本号：3~31。一般都是写 3。
 * S0：服务端返回其所支持的版本号。如果没有客户端的版本号，默认返回 3。
@@ -42,7 +42,7 @@ rtmp 内容太多了。。。好记性不如烂笔头，留个念想吧
 * 0-2 是早期产品所用的，已被丢弃；4-31 保留在未来使用 ； 32-255 不允许使用 （为了区分其他以某一字符开始的文本协议）。如果服务无法识别客户端请求的版本，应该返回 3 。客户端可以选择减到版本 3 或选择取消握手
 
 #### C1 和 S1 消息格式
-![](resource/rtmp/03.png)
+![](../resource/rtmp/03.png)
 
 * time： 4 字节，本字段包含时间戳。
 * zero： 4 字节，本字段必须是全零。
@@ -57,7 +57,7 @@ rtmp 内容太多了。。。好记性不如烂笔头，留个念想吧
 
 #### C2 和 S2 消息格式
 C2 和 S2 消息有 1536 字节长。 只是 S1 和 C1 的回复。
-![](resource/rtmp/04.png)
+![](../resource/rtmp/04.png)
 
 * time: 4个字节，时间戳，同上，也不是很重要
 * time2: 4个字节，C1/S1 发送的时间戳。
@@ -82,7 +82,7 @@ C2 和 S2 消息有 1536 字节长。 只是 S1 和 C1 的回复。
 
 #### Chunk 结构
 块由header和data组成，header又由三部分组成，结构如下：
-![](resource/rtmp/05.png)
+![](../resource/rtmp/05.png)
 * basic header: 1到3个字节
     * 本字段包含块流 ID(chunk stream id) 和块类型(fmt)。
     * fmt决定编码的消息头的格式。
@@ -103,15 +103,15 @@ C2 和 S2 消息有 1536 字节长。 只是 S1 和 C1 的回复。
     * 3–63范围内的值表示完整的流ID，没有用于表示它的其他字节。
 
 ##### 块流 ID 3-63 可用 1 字节来表示
-![](resource/rtmp/06.png)
+![](../resource/rtmp/06.png)
 
 ##### 块流 ID 64-319 可以用 2 字节表示 
-![](resource/rtmp/07.png)
+![](../resource/rtmp/07.png)
 
 * 注意上面的 cs id - 64。这个代表的是第二个字节+64
 
 ##### 块流 ID64-65599 可以用 3 字节表示
-![](resource/rtmp/08.png)
+![](../resource/rtmp/08.png)
 * 上面的csid计算方式：为第三个字节*255+第二个字节+64
 
 
@@ -131,7 +131,7 @@ Basic header 中的fmt块类型决定了message header的大小，fmt占两位�
 
 ##### fmt=0
 此类型下message header大小为11字节，在一个块流的开始和时间戳返回的时候必须有这种块
-![](resource/rtmp/09.png)
+![](../resource/rtmp/09.png)
 
 * timestamp（时间戳）：占用3个字节
 * message length（消息数据的长度）：占用3个字节，表示实际发送的消息的数据如音频帧、视频帧等数据的长度，单位是字节。注意这里是Message的长度，也就是chunk属于的Message的总数据长度，而不是chunk本身Data的数据的长度。
@@ -144,7 +144,7 @@ Basic header 中的fmt块类型决定了message header的大小，fmt占两位�
 
 ##### fmt=1
 此类型下message header占 7 个字节长。msg stream id 不包含在本块中, 表明当前块的msg stream id与先前的块相同。 具有可变大小消息的流，在第一个消息之后的每个消息的第一个块应该使用这个格式
-![](resource/rtmp/10.png)
+![](../resource/rtmp/10.png)
 
 * 省去了表示msg stream id的4个字节，表示此chunk和上一次发的chunk所在的流相同
 * timestamp delta：占用3个字节，注意这里和type＝0时的timestamp不同，此处timestamp delta存储的是和上一个chunk的时间差
@@ -153,7 +153,7 @@ Basic header 中的fmt块类型决定了message header的大小，fmt占两位�
 类型 2 的块占 3 个字节。既不包含流 ID 也不包含消息长度。本块使用的流
 ID 和消息长度与先前的块相同。具有固定大小消息的流，在第一个消息之后的
 每个消息的第一个块应该使用这个格式
-![](resource/rtmp/11.png)
+![](../resource/rtmp/11.png)
 
 * 相对于type＝1格式又省去了表示消息长度的3个字节和表示消息类型的1个字节，表示此chunk和上一次发送的chunk所在的流、消息的长度和消息的类型都相同
 * 余下的这三个字节表示timestamp delta，意义同type＝1
@@ -167,7 +167,7 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
     * 比如第一个chunk的Type＝0，timestamp＝100，第二个chunk的Type＝2，timestamp delta＝20，表示时间戳为100+20=120，第三个chunk的Type＝3，表示timestamp delta＝20，时间戳为120+20=140
 
 #### Extended Timestamp 扩展时间戳
-![](resource/rtmp/12.png)
+![](../resource/rtmp/12.png)
 * 只有当块message header中的普通时间戳设置为 0x00ffffff 时，本字段才被传送。 
 * 如果普通时间戳的值小于 0x00ffffff，那么本字段一定不能出现。
 * 如果时间戳字段不出现本字段也一定不能出现。
@@ -183,11 +183,11 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 ### 消息分块实例
 #### 实例1
 下面展示一个简单的音频消息流。这个例子显示了信息的冗余。
-![](resource/rtmp/13.png)
+![](../resource/rtmp/13.png)
 
 而下表显示了这个流产生的块。从消息 3 开始，数据传输开始优化。在消息 3
 之后，每个消息只有一个字节的开销
-![](resource/rtmp/14.png)
+![](../resource/rtmp/14.png)
 
 * 首先包含第一个Message的chunk的Chunk Type为0，因为它没有前面可参考的chunk，timestamp为1000，表示时间戳。type为0的header占用11个字节，假定chunkstreamId为3<127，因此Basic Header占用1个字节，再加上Data的32个字节，因此第一个chunk共44＝11+1+32个字节。
 * 第二个chunk和第一个chunk的CSID，TypeId，Data的长度都相同，因此采用Chunk Type＝2，timestamp delta＝1020-1000＝20，因此第二个chunk占用36=3+1+32个字节。
@@ -198,9 +198,9 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 下面演示一个消息由于太长，而被分割成 128 字节的块
 
 未分块时：
-![](resource/rtmp/15.png)
+![](../resource/rtmp/15.png)
 拆成块：
-![](resource/rtmp/16.png)
+![](../resource/rtmp/16.png)
 
 * 注意到Data的Length＝307>128,因此这个Message要切分成几个chunk发送，第一个chunk的Type＝0，Timestamp＝1000，承担128个字节的Data，因此共占用140=11+1+128个字节。
 * 第二个chunk也要发送128个字节，其他字段也同第一个chunk，因此采用Chunk Type＝3，此时时间戳也为1000，共占用129=1+128个字节。
@@ -211,7 +211,7 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 * 服务端和客户端通过在网络上发送 RTMP 消息进行通讯。消息可能包含音频，视频，数据，或其他的消息
 * RTMP 消息分头（header）和负载（payload）两部分
 
-![](resource/rtmp/17.png)
+![](../resource/rtmp/17.png)
  
  * Message Type： 1 byte 
 	 * 一个字节字段用于表示消息类型。范围在 1-7 内的消息 ID 用于协议控制消息
@@ -232,41 +232,41 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 
 ##### message type =1 
 * Set Chunk Size 设置块的大小，通知对端用使用新的块大小,共4 bytes。
-![](resource/rtmp/22.png)
+![](../resource/rtmp/22.png)
 
 * 块大小的值被承载为 4 字节大小的负载。块大小有默认的值，但是如果发送者希望改变这个值，则用本消息通知对等端。例如，一个客户端想要发送 131 字节的数据，而块大小是默认的 128 字节。那么，客户端发送的消息要分成两个块发送。客户端可以选择改变块大小为 131 字节，这样消息就不用被分割为两个块。客户端必须向服务端发送本消息来通知对方块大小改为 131 字节。
 * 最大块大小为 65536 字节。服务端向客户端通讯的块大小与客户端向服务端通讯的块大小互相独立
-![](resource/rtmp/23.png)
+![](../resource/rtmp/23.png)
 
 ##### message type = 2
 * Abort Message 取消消息，用于通知正在等待接收块以完成消息的对等端,丢弃一个块流中已经接收的部分并且取消对该消息的处理，共4 bytes。
-![](resource/rtmp/24.png)
+![](../resource/rtmp/24.png)
 
 * 协议控制消息 2 是取消消息，用于通知正在等待接收块以完成消息的对等端，丢弃一个块流中已经接收的部分并且取消对该消息的处理。
 * 对等端把这个消息的负载当作要丢弃的消息的块流 ID。当发送者已经发送了一个消息的一部分，但是希望告诉接收者消息的余下部分不再发送时，发送本消息。
-![](resource/rtmp/25.png)
+![](../resource/rtmp/25.png)
 
 ##### message type = 3
  * Acknowledgement 确认消息，共4 bytes。
-![](resource/rtmp/26.png)
+![](../resource/rtmp/26.png)
 
  * 客户端或服务端在接收到数量与窗口大小相等的字节后发送确认消息到对方。窗口大小是在没有接收到接收者发送的确认消息之前发送的字节数的最大值。服务端在建立连接之后发送窗口大小。本消息指定序列号。序列号,是到当前时间为止已经接收到的字节数。 
-![](resource/rtmp/27.png)
+![](../resource/rtmp/27.png)
 
 ##### message type = 4
 * User Control Message 用户控制消息，客户端或服务端发送本消息通知对方用户的控制事件。本消息承载事件类型和事件数据。消息数据的头两个字节用于标识事件类型。事件类型之后是事件数据。事件数据字段是可变长的。
-![](resource/rtmp/28.png)
-![](resource/rtmp/29.png)
+![](../resource/rtmp/28.png)
+![](../resource/rtmp/29.png)
 
 ##### message type = 5
 * Window Acknowledgement Size 确认窗口大小,客户端或服务端发送本消息来通知对方发送确认(致谢)消息的窗口大小,共4 bytes.
-![](resource/rtmp/30.png)
-![](resource/rtmp/31.png)
+![](../resource/rtmp/30.png)
+![](../resource/rtmp/31.png)
 
 ##### message type = 6
 * Set Peer Bandwidth 设置对等端带宽
 * 客户端或服务端发送本消息更新对等端的输出带宽。输出带宽值与窗口大小值相同。如果对等端在本消息中收到的值与窗口大小不相同，则发回确认（致谢）窗口大小消息。
-![](resource/rtmp/32.png)
+![](../resource/rtmp/32.png)
 * 发送者可以在限制类型字段把消息标记为硬（0），软（1），或者动态（2）。如果是硬限制对等端必须按提供的带宽发送数据。如果是软限制，对等端可以灵活决定带宽，发送端可以限制带宽。如果是动态限制，带宽既可以是硬限制也可以是软限制。
 
 #### Message type - 其他类型消息
@@ -285,8 +285,8 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 
 ##### Shared Object Message(共享消息，Message Type ID＝16或19)
 * 共享对象是跨多个客户端，实例同步的 FLASH 对象（名值对的集合）。消息类型kMsgContainer=19 用 AMF0 编码， kMsgContainerEx=16 用 AMF3 编码，这两个消息用于共享对象事件。每个消息可包含多个事件。
-![](resource/rtmp/33.png)
-![](resource/rtmp/34.png)
+![](../resource/rtmp/33.png)
+![](../resource/rtmp/34.png)
 
 ##### Audio Message（音频信息，Message Type ID＝8)
 * 客户端或服务端发送本消息用于发送音频数据。消息类型 8 ，保留为音频消息
@@ -298,8 +298,8 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 
 ##### Aggregate Message (聚集/聚合信息，Message Type ID＝22)
 * 聚合消息是含有一个消息列表的一种消息。消息类型值 22，保留用于聚合消息
-![](resource/rtmp/35.png)
-![](resource/rtmp/36.png)
+![](../resource/rtmp/35.png)
+![](../resource/rtmp/36.png)
 * 后端包含前面消息的包含头在内的大小。这个设置匹配 flv 文件格式，用于后向搜索。
 
 **使用聚合消息的好处：**
@@ -312,8 +312,8 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 * 是协议控制消息的一类，消息类型 ID为4：
     * Message Stream ID=0,Chunk Stream Id= 0x02,Message Type Id=0x04
 
-![](resource/rtmp/37.png)
-![](resource/rtmp/38.png)
+![](../resource/rtmp/37.png)
+![](../resource/rtmp/38.png)
 
 ### 命令类型
 * 客户端和服务端 交换 AMF 编码的命令。发送端发送命令消息。命令消息由命令名，传输 ID，和命令对象组成。命令对象由一系列的相关参数组成。例如，连接命令包含”app”参数，这个参数告知服务端，客户端要连接的应用名。接收端处理命令并且返回含有相同传输 ID 的响应。响应字符串含有_result 或_error 或一个方法名， 例如，一个 verifyclient，或一个 contactExternalServer。
@@ -322,7 +322,7 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
 * NetConnection-代表服务端和客户端之间连接的更高层的对象
 * NetStream-代表发送音频流，视频流和其他相关数据的通道的对象。我们也发送像
 播放，暂停等控制数据流动的命令。
-![](resource/rtmp/39.png)
+![](../resource/rtmp/39.png)
 
 #### NetConnection 命令
 * NetConnection 管理服务端和客户端之间的双路连接。另外，它还支持异步远程方
@@ -334,24 +334,24 @@ ID 和消息长度与先前的块相同。具有固定大小消息的流，在�
     
 ##### Connect 
 * 客户端向服务端发送一个连接命令请求连接到一个服务应用实例。客户端到服务端的命令结构如下：
-![](resource/rtmp/40.png)
-![](resource/rtmp/41.png)
+![](../resource/rtmp/40.png)
+![](../resource/rtmp/41.png)
 
 * Following is the description of the name-value pairs used in Command
 Object of the connect command.下面是在连接命令的命令对象中使用的名值对的描述:
-![](resource/rtmp/42.png)
-![](resource/rtmp/43.png)
-![](resource/rtmp/44.png)
+![](../resource/rtmp/42.png)
+![](../resource/rtmp/43.png)
+![](../resource/rtmp/44.png)
 
 * 音频编解码器属性值
-![](resource/rtmp/45.png)
+![](../resource/rtmp/45.png)
 * 视频编解码器属性值
-![](resource/rtmp/46.png)
+![](../resource/rtmp/46.png)
 
-![](resource/rtmp/47.png)
+![](../resource/rtmp/47.png)
 
 * connect命令消息交互流程：
-![](resource/rtmp/48.png)
+![](../resource/rtmp/48.png)
 * 执行步骤：
     * 客户端发送连接命令到服务端，请求与一个服务应用实例建立连接。
     * 接收到连接命令后，服务端发送”窗口确认消息”到客户端。服务端同时连接到连接命令中提到的应用。
@@ -364,9 +364,9 @@ Object of the connect command.下面是在连接命令的命令对象中使用�
 * NetConnection 对象的调用方法在接收端运行远程过程调用。远程方法的名作为调
 用命令的参数。
 * 从发送端到接收端的命令结构如下：
-![](resource/rtmp/49.png)
+![](../resource/rtmp/49.png)
 * 命令相应结构如下：
-![](resource/rtmp/50.png)
+![](../resource/rtmp/50.png)
 
 ##### CreateStream 创建流
 * 客户端发送本命令到服务端创建一个消息通讯的逻辑通道。 音频，视频和元数据的
@@ -375,10 +375,10 @@ Object of the connect command.下面是在连接命令的命令对象中使用�
 括创建流，就使用默认的通讯通道。
 
 * 从客户端到服务端的命令结构如下：
-![](resource/rtmp/51.png)
+![](../resource/rtmp/51.png)
 
 * 从服务端到客户端的命令结构如下：
-![](resource/rtmp/52.png)
+![](../resource/rtmp/52.png)
 
 #### NetStream 命令
 * NetStream 定义，基于连接客户端和服务端的 NetConnection 对象的，可以使音频流，视频流和数据消息传输的通道。 对于多数据流，一个 NetConnection 对象可以支持多个 NetStreams。
@@ -396,19 +396,19 @@ Object of the connect command.下面是在连接命令的命令对象中使用�
 ##### play
 * 客户端发送本命令到服务端播放一个流。 使用本命令多次也可以创建一个播放列表。如果想创建一个可以在不同的直播流或录制流间切换的动态播放列表，可以多次使用播放命令，并且将重设设为假。 相反，如果想立即播放一个流。清楚队列中正在等待的其它流，将重设设为真。
 * 从客户端到服务端的命令结构入下：
-![](resource/rtmp/53.png)
-![](resource/rtmp/54.png)
+![](../resource/rtmp/53.png)
+![](../resource/rtmp/54.png)
 汉化版：
-![](resource/rtmp/56.png)
-![](resource/rtmp/57.png)
+![](../resource/rtmp/56.png)
+![](../resource/rtmp/57.png)
 
 * 从服务端到客户端的命令结构如下：
-![](resource/rtmp/55.png)
+![](../resource/rtmp/55.png)
 汉化版：
-![](resource/rtmp/58.png)
+![](../resource/rtmp/58.png)
 
 * 交互流程：
-![](resource/rtmp/59.png)
+![](../resource/rtmp/59.png)
 * 步骤：
     * 客户端从服务端接收到流创建成功消息，发送播放命令到服务端。
     * 接收到播放命令后，服务端发送协议消息设置块大小。
@@ -421,59 +421,59 @@ Object of the connect command.下面是在连接命令的命令对象中使用�
 * 和play命令不同，play2 命令可以切换到不同的码率，而不用改变已经播放的内
 容的时间线。服务端对play2命令可以请求的多个码率维护多个文件。
 * 从客户端到服务端的命令结构入下：
-![](resource/rtmp/60.png)
+![](../resource/rtmp/60.png)
 汉化版：
-![](resource/rtmp/61.png)
+![](../resource/rtmp/61.png)
 * 交互流程：
-![](resource/rtmp/62.png)
+![](../resource/rtmp/62.png)
 
 ##### deleteStream 
 * 当 NetStream 对象销毁的时候发送删除流命令
 * 从客户端到服务端的命令结构入下：
-![](resource/rtmp/63.png)
+![](../resource/rtmp/63.png)
 汉化版：
-![](resource/rtmp/64.png)
+![](../resource/rtmp/64.png)
 * 服务端不返回任何响应
 
 ##### receiveAudio 
 * NetStream 对象发送接收音频消息通知服务端发送还是不发送音频到客户端。
 * 从客户端到服务端的命令结构入下：
-![](resource/rtmp/65.png)
+![](../resource/rtmp/65.png)
 汉化版：
-![](resource/rtmp/66.png)
+![](../resource/rtmp/66.png)
 * 服务端不返回任何响应
 
 ##### receiveVideo
 * NetStream 对象发送 receiveVideo 消息通知服务端是否发送视频到客户端。
 * 从客户端到服务端的命令结构入下：
-![](resource/rtmp/68.png)
+![](../resource/rtmp/68.png)
 汉化版：
-![](resource/rtmp/67.png)
+![](../resource/rtmp/67.png)
 * 服务端不返回任何响应
 
 ##### Publish
 * 客户端发送一个发布命令，发布一个命名流到服务端。 使用这个名字，任何客户端可
 以播放该流并且接收音频，视频，和数据消息
 * 从客户端到服务端的命令结构入下：
-![](resource/rtmp/69.png)
+![](../resource/rtmp/69.png)
 汉化版：
-![](resource/rtmp/70.png)
+![](../resource/rtmp/70.png)
 * 服务端用响应状态命令响应表示一个发布的开始
 
 ##### seek
 * 客户端发送seek命令在一个媒体文件中或播放列表中seek偏移
 * 从客户端到服务端的命令结构入下：
-![](resource/rtmp/71.png)
+![](../resource/rtmp/71.png)
 汉化版：
-![](resource/rtmp/73.png)
+![](../resource/rtmp/73.png)
 * 如果seek成功服务端发送一个 NetStream.Seek.Notify 状态消息。如果失败，则返回含有_error 的消息。
 
 ##### pause
 * 客户端发送暂停命令告诉服务端暂停或开始一个命令。
 * 从客户端到服务端的命令结构入下：
-![](resource/rtmp/72.png)
+![](../resource/rtmp/72.png)
 汉化版：
-![](resource/rtmp/74.png)
+![](../resource/rtmp/74.png)
 * 当流暂停的时候，服务端发送一个 NetStream.Pause.Notify 状态消息。当恢复播放的时候发送 NetStream.Unpause.Notify 消息。如果失败，则返回_error 消息
 
 ### 参考
